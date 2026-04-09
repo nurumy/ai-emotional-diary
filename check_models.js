@@ -2,8 +2,9 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import fs from 'fs';
 
 const envFile = fs.readFileSync('.env', 'utf8');
-const keyMatch = envFile.match(/VITE_GEMINI_API_KEY=(.*)/);
-const API_KEY = keyMatch ? keyMatch[1] : '';
+const keyMatch = envFile.match(/GEMINI_API_KEY=(.*)/);
+const API_KEY = keyMatch ? keyMatch[1].trim() : '';
+
 
 const genAI = new GoogleGenerativeAI(API_KEY);
 

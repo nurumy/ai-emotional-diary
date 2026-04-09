@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+// Frontend Script for AI Emotional Diary
 
 document.addEventListener('DOMContentLoaded', () => {
     const analyzeBtn = document.getElementById('analyze-btn');
@@ -11,19 +11,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const themeIcon = document.getElementById('theme-icon');
 
 
-    // Initialize Gemini API
-    const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-    let model = null;
+    // Initialize Data
     let diaries = JSON.parse(localStorage.getItem('diaries') || '[]');
     let emotionChart = null;
 
-
-    if (!API_KEY || API_KEY === 'YOUR_GEMINI_API_KEY_HERE') {
-        console.warn('GEMINI_API_KEY가 설정되지 않았습니다. .env 파일을 확인해주세요.');
-    } else {
-        const genAI = new GoogleGenerativeAI(API_KEY);
-        model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-    }
 
     // Storage and Rendering Logic
     const saveToLocalStorage = () => {
@@ -177,29 +168,32 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        if (!model) {
-            alert('API 키가 올바르게 설정되지 않았습니다. .env 파일을 확인해 주세요.');
-            return;
-        }
-
         // Show loading state
         aiText.innerText = 'AI가 당신의 마음을 읽고 있어요... 잠시만 기다려주세요.';
         aiText.style.opacity = '0.5';
-        responseBox.style.background = '#e5e7eb';
+        responseBox.style.background = 'rgba(0,0,0,0.05)';
         analyzeBtn.disabled = true;
 
         try {
-            const prompt = `너는 심리 상담가야. 사용자가 작성한 일기 내용을 읽고, 사용자의 감정을 한 단어(예: 기쁨, 슬픔, 분노, 불안, 평온)로 요약해줘. 그리고 그 감정에 공감해주고, 따뜻한 응원의 메시지를 2~3문장으로 작성해줘. 답변 형식은 반드시 '감정: [요약된 감정]\n\n[응원 메시지]'와 같이 줄바꿈을 포함해서 보내줘.
+            const res = await fetch('/api/analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content: text })
+            });
 
-일기 내용: "${text}"`;
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.message || '서버 응답 오류');
+            }
 
-            const result = await model.generateContent(prompt);
-            const response = await result.response;
-            const aiResponse = response.text();
+            const data = await res.json();
+            const aiResponse = data.response;
 
             aiText.innerText = aiResponse;
-            aiText.style.color = '#1f2937';
-            responseBox.style.background = '#f3f4f6';
+            aiText.style.opacity = '1';
+            aiText.style.color = 'var(--text-main)';
+            responseBox.style.background = 'var(--input-bg)';
+
 
             // Save to history
             const emotionMatch = aiResponse.match(/감정:\s*([^\n]+)/);
