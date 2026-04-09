@@ -1,4 +1,6 @@
+// Vercel Serverless Function for Diary Analysis (Updated model and reporting)
 import { GoogleGenerativeAI } from "@google/generative-ai";
+
 
 export default async function handler(req, res) {
     // GET 요청 방지
