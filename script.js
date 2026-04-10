@@ -12,22 +12,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // Initialize Data
-    let diaries = JSON.parse(localStorage.getItem('diaries') || '[]');
+    let diaries = [];
     let emotionChart = null;
 
 
-    // Storage and Rendering Logic
-    const saveToLocalStorage = () => {
-        localStorage.setItem('diaries', JSON.stringify(diaries));
+
+    // Cloud History Logic
+    const fetchHistory = async () => {
+        try {
+            const res = await fetch('/api/history');
+            if (res.ok) {
+                const data = await res.json();
+                diaries = data.history.map(item => ({
+                    ...item,
+                    // Redis 데이터 형식 호환을 위해 날짜 처리
+                    date: new Date(item.createdAt).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' }),
+                    timestamp: new Date(item.createdAt).getTime(),
+                    emotion: item.aiResponse.match(/감정:\s*([^\n]+)/)?.[1]?.trim() || '평온'
+                }));
+
+                renderHistory();
+            }
+        } catch (error) {
+            console.error('History Fetch Error:', error);
+        }
     };
 
+
     const deleteDiary = (id) => {
-        if (confirm('이 일기 기록을 삭제할까요?')) {
+        // 현재는 Redis 삭제 API가 없으므로 로컬 UI에서만 필터링 (다음 단계에서 API 추가 권장)
+        if (confirm('이 일기 기록을 목록에서 숨길까요? (서버 데이터는 유지됩니다)')) {
             diaries = diaries.filter(d => d.id !== id);
-            saveToLocalStorage();
             renderHistory();
         }
     };
+
 
     const renderHistory = () => {
         historyList.innerHTML = '';
@@ -154,8 +173,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 
-    // Initial Render
-    renderHistory();
+    // Initial Fetch
+    fetchHistory();
+
 
 
 
@@ -208,9 +228,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 timestamp: Date.now()
             };
 
-            diaries.push(newEntry);
-            saveToLocalStorage();
-            renderHistory();
+            // Refresh from Cloud to get synced data (or manually update for speed)
+            await fetchHistory();
+
 
         } catch (error) {
             console.error('Gemini API 오류:', error);
