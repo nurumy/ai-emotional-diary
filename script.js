@@ -298,6 +298,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Realtime Chat Logic ---
     const initRealtimeChat = async (user) => {
         if (chatChannel) return;
+        chatChannel = 'initializing'; // 중복 실행 방지용 락(Lock)
 
         // 1. 기존 메시지 불러오기 (최근 50개)
         const { data: initialMessages, error: loadError } = await supabase
@@ -318,7 +319,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // 2. 실시간 구독 설정 (Postgres Changes)
-        chatChannel = supabase
+        const newChannel = supabase
             .channel('public:messages')
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
                 const newMsg = payload.new;
@@ -328,8 +329,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     time: new Date(newMsg.created_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
                     userId: newMsg.user_id
                 });
-            })
-            .subscribe();
+            });
+
+        chatChannel = newChannel.subscribe((status) => {
+            if (status === 'SUBSCRIBED') {
+                console.log('Chat successfully subscribed!');
+            }
+        });
+
 
         // 3. 메시지 전송 로직
         const sendChat = async () => {
