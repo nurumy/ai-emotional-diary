@@ -296,41 +296,58 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // --- Realtime Chat Logic ---
-    const initRealtimeChat = (user) => {
+    const initRealtimeChat = async (user) => {
         if (chatChannel) return;
 
-        chatChannel = supabase.channel('room1', {
-            config: {
-                broadcast: { self: true }
-            }
-        });
+        // 1. 기존 메시지 불러오기 (최근 50개)
+        const { data: initialMessages, error: loadError } = await supabase
+            .from('messages')
+            .select('*')
+            .order('created_at', { ascending: true })
+            .limit(50);
 
-        chatChannel
-            .on('broadcast', { event: 'message' }, (payload) => {
-                appendChatMessage(payload.payload);
-            })
-            .subscribe((status) => {
-                if (status === 'SUBSCRIBED') {
-                    console.log('Chat subscribed!');
-                }
+        if (!loadError && initialMessages) {
+            initialMessages.forEach(msg => {
+                appendChatMessage({
+                    userEmail: msg.user_email,
+                    text: msg.content,
+                    time: new Date(msg.created_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
+                    userId: msg.user_id
+                });
             });
+        }
 
-        const sendChat = () => {
+        // 2. 실시간 구독 설정 (Postgres Changes)
+        chatChannel = supabase
+            .channel('public:messages')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
+                const newMsg = payload.new;
+                appendChatMessage({
+                    userEmail: newMsg.user_email,
+                    text: newMsg.content,
+                    time: new Date(newMsg.created_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
+                    userId: newMsg.user_id
+                });
+            })
+            .subscribe();
+
+        // 3. 메시지 전송 로직
+        const sendChat = async () => {
             const message = chatInput.value.trim();
             if (!message) return;
 
-            chatChannel.send({
-                type: 'broadcast',
-                event: 'message',
-                payload: {
-                    userEmail: user.email,
-                    text: message,
-                    time: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
-                    userId: user.id
-                }
-            });
+            const { error } = await supabase
+                .from('messages')
+                .insert([
+                    { content: message, user_email: user.email }
+                ]);
 
-            chatInput.value = '';
+            if (error) {
+                console.error('메시지 전송 오류:', error);
+                showModal('메시지 전송에 실패했습니다.');
+            } else {
+                chatInput.value = ''; // 전송 성공 시 입력창 초기화
+            }
         };
 
         chatSendBtn.addEventListener('click', sendChat);
@@ -338,6 +355,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.key === 'Enter') sendChat();
         });
     };
+
 
     const appendChatMessage = async (data) => {
         const { data: { session } } = await supabase.auth.getSession();
