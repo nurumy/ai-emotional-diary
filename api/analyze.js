@@ -1,6 +1,6 @@
-// Vercel Serverless Function for Diary Analysis (Updated model and reporting)
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import Redis from "ioredis";
+import { supabase } from "./lib/supabase.js";
 
 // Vercel Serverless Function 환경에서 Redis 연결 재사용을 위해 전역에 선언
 let redis = null;
@@ -14,6 +14,18 @@ export default async function handler(req, res) {
         return res.status(405).json({ message: 'Only POST requests allowed' });
     }
 
+    // Authorization 헤더 확인 및 사용자 검증
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+        return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) {
+        return res.status(401).json({ message: 'Invalid token', error: authError?.message });
+    }
+
+    const userId = user.id;
     const { content } = req.body;
 
     if (!content) {
@@ -50,9 +62,10 @@ export default async function handler(req, res) {
                 String(now.getMinutes()).padStart(2, '0') +
                 String(now.getSeconds()).padStart(2, '0');
 
-            const diaryId = `diary-${timestamp}`;
+            const diaryId = `user:${userId}:diary-${timestamp}`;
             const diaryData = {
                 id: diaryId,
+                userId: userId, // 향후 검색 용이성을 위해 필드 추가
                 content: content,
                 aiResponse: aiResponse,
                 createdAt: now.toISOString()
@@ -60,6 +73,7 @@ export default async function handler(req, res) {
 
             await redis.set(diaryId, JSON.stringify(diaryData));
             console.log(`Successfully saved to Redis with key: ${diaryId}`);
+
         }
 
         return res.status(200).json({ response: aiResponse });

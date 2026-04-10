@@ -1,4 +1,5 @@
 import Redis from "ioredis";
+import { supabase } from "./lib/supabase.js";
 
 let redis = null;
 if (process.env.REDIS_URL) {
@@ -15,8 +16,21 @@ export default async function handler(req, res) {
     }
 
     try {
-        // 모든 diary-* 키 가져오기
-        const keys = await redis.keys('diary-*');
+        // Authorization 헤더 확인 및 사용자 검증
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ message: 'Authentication required' });
+        }
+
+        const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+        if (authError || !user) {
+            return res.status(401).json({ message: 'Invalid token' });
+        }
+
+        const userId = user.id;
+
+        // 사용자별 diary-* 키 가져오기
+        const keys = await redis.keys(`user:${userId}:diary-*`);
 
         if (keys.length === 0) {
             return res.status(200).json({ history: [] });
@@ -37,3 +51,4 @@ export default async function handler(req, res) {
         return res.status(500).json({ message: '보관함 데이터를 가져오는데 실패했습니다.', error: error.message });
     }
 }
+

@@ -54,10 +54,18 @@ document.addEventListener('DOMContentLoaded', () => {
     // Cloud History Logic
     const fetchHistory = async () => {
         try {
-            const res = await fetch('/api/history');
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) return;
+
+            const res = await fetch('/api/history', {
+                headers: {
+                    'Authorization': `Bearer ${session.access_token}`
+                }
+            });
             if (res.ok) {
                 const data = await res.json();
                 diaries = data.history.map(item => ({
+
                     ...item,
                     // Redis 데이터 형식 호환을 위해 날짜 처리
                     date: new Date(item.createdAt).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' }),
@@ -297,11 +305,21 @@ document.addEventListener('DOMContentLoaded', () => {
         analyzeBtn.disabled = true;
 
         try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                showModal('로그인이 필요한 서비스입니다.');
+                return;
+            }
+
             const res = await fetch('/api/analyze', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`
+                },
                 body: JSON.stringify({ content: text })
             });
+
 
             if (!res.ok) {
                 const errorData = await res.json();
