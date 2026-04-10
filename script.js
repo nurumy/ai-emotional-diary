@@ -33,6 +33,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalMessage = document.getElementById('modal-message');
     const modalCloseBtn = document.getElementById('modal-close-btn');
 
+    // Chat Elements
+    const chatMessages = document.getElementById('chat-messages');
+    const chatInput = document.getElementById('chat-input');
+    const chatSendBtn = document.getElementById('chat-send-btn');
+    let chatChannel = null;
+
     const showModal = (msg) => {
         modalMessage.textContent = msg;
         customModal.style.display = 'flex';
@@ -223,12 +229,18 @@ document.addEventListener('DOMContentLoaded', () => {
             userInfo.style.display = 'flex';
             userEmailSpan.textContent = session.user.email;
             fetchHistory();
+            initRealtimeChat(session.user);
         } else {
             authContainer.style.display = 'flex';
             appContainer.style.display = 'none';
             userInfo.style.display = 'none';
+            if (chatChannel) {
+                supabase.removeChannel(chatChannel);
+                chatChannel = null;
+            }
         }
     };
+
 
     // Listen for Auth State Changes
     supabase.auth.onAuthStateChange((_event, session) => {
@@ -281,6 +293,75 @@ document.addEventListener('DOMContentLoaded', () => {
         const { error } = await supabase.auth.signOut();
         if (error) showModal(`로그아웃 오류: ${error.message}`);
     });
+
+
+    // --- Realtime Chat Logic ---
+    const initRealtimeChat = (user) => {
+        if (chatChannel) return;
+
+        chatChannel = supabase.channel('room1', {
+            config: {
+                broadcast: { self: true }
+            }
+        });
+
+        chatChannel
+            .on('broadcast', { event: 'message' }, (payload) => {
+                appendChatMessage(payload.payload);
+            })
+            .subscribe((status) => {
+                if (status === 'SUBSCRIBED') {
+                    console.log('Chat subscribed!');
+                }
+            });
+
+        const sendChat = () => {
+            const message = chatInput.value.trim();
+            if (!message) return;
+
+            chatChannel.send({
+                type: 'broadcast',
+                event: 'message',
+                payload: {
+                    userEmail: user.email,
+                    text: message,
+                    time: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
+                    userId: user.id
+                }
+            });
+
+            chatInput.value = '';
+        };
+
+        chatSendBtn.addEventListener('click', sendChat);
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendChat();
+        });
+    };
+
+    const appendChatMessage = async (data) => {
+        const { data: { session } } = await supabase.auth.getSession();
+        const currentUser = session?.user;
+        const isMe = currentUser && currentUser.id === data.userId;
+
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `chat-msg ${isMe ? 'me' : 'other'}`;
+
+        msgDiv.innerHTML = `
+            ${!isMe ? `<div class="msg-info">${data.userEmail.split('@')[0]}</div>` : ''}
+            <div class="msg-text">${data.text}</div>
+            <div class="msg-time">${data.time}</div>
+        `;
+
+        chatMessages.appendChild(msgDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        // Welcome 메시지 제거
+        const welcome = chatMessages.querySelector('.welcome-msg');
+        if (welcome) welcome.remove();
+    };
+
+
 
 
 
