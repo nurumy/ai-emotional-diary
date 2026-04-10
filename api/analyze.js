@@ -1,6 +1,12 @@
 // Vercel Serverless Function for Diary Analysis (Updated model and reporting)
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import Redis from "ioredis";
 
+// Vercel Serverless Function 환경에서 Redis 연결 재사용을 위해 전역에 선언
+let redis = null;
+if (process.env.REDIS_URL) {
+    redis = new Redis(process.env.REDIS_URL);
+}
 
 export default async function handler(req, res) {
     // GET 요청 방지
@@ -33,6 +39,28 @@ export default async function handler(req, res) {
         const result = await model.generateContent(prompt);
         const response = await result.response;
         const aiResponse = response.text();
+
+        // Redis에 저장 (고유 ID 생성: diary-YYYYMMDDHHMMSS)
+        if (redis) {
+            const now = new Date();
+            const timestamp = now.getFullYear() +
+                String(now.getMonth() + 1).padStart(2, '0') +
+                String(now.getDate()).padStart(2, '0') +
+                String(now.getHours()).padStart(2, '0') +
+                String(now.getMinutes()).padStart(2, '0') +
+                String(now.getSeconds()).padStart(2, '0');
+
+            const diaryId = `diary-${timestamp}`;
+            const diaryData = {
+                id: diaryId,
+                content: content,
+                aiResponse: aiResponse,
+                createdAt: now.toISOString()
+            };
+
+            await redis.set(diaryId, JSON.stringify(diaryData));
+            console.log(`Successfully saved to Redis with key: ${diaryId}`);
+        }
 
         return res.status(200).json({ response: aiResponse });
     } catch (error) {
