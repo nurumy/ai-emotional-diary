@@ -22,13 +22,54 @@
 </head>
 
 <body>
-    <div class="app-container">
-        <header>
-            <div class="theme-toggle-container">
-                <button id="theme-toggle" class="theme-btn" aria-label="테마 전환">
-                    <i data-lucide="sun" id="theme-icon"></i>
+    <!-- Auth Section -->
+    <div id="auth-container" class="auth-container">
+        <div class="auth-card glass">
+            <h1>AI 감정 일기</h1>
+            <p class="auth-subtitle">오늘 당신의 마음을 기록해보세요.</p>
+
+            <div class="auth-form">
+                <div class="input-group">
+                    <label for="auth-email">이메일</label>
+                    <input type="email" id="auth-email" placeholder="example@email.com">
+                </div>
+                <div class="input-group">
+                    <label for="auth-password">비밀번호</label>
+                    <input type="password" id="auth-password" placeholder="********">
+                </div>
+
+                <div class="auth-buttons">
+                    <button id="login-btn" class="btn btn-primary">로그인</button>
+                    <button id="signup-btn" class="btn btn-secondary">회원가입</button>
+                </div>
+
+                <div class="divider">
+                    <span>또는</span>
+                </div>
+
+                <button id="google-login-btn" class="btn btn-google">
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/action/google.svg" alt="Google icon">
+                    Google로 로그인
                 </button>
             </div>
+        </div>
+    </div>
+
+    <div id="app-container" class="app-container" style="display: none;">
+
+        <header>
+            <div class="header-top">
+                <div class="user-info" id="user-info" style="display: none;">
+                    <span id="user-email"></span>
+                    <button id="logout-btn" class="logout-link">로그아웃</button>
+                </div>
+                <div class="theme-toggle-container">
+                    <button id="theme-toggle" class="theme-btn" aria-label="테마 전환">
+                        <i data-lucide="sun" id="theme-icon"></i>
+                    </button>
+                </div>
+            </div>
+
             <h1 id="main-title">오늘의하루는 어땠나요?</h1>
             <p class="subtitle">당신의 소중한 이야기를 들려주세요.</p>
         </header>

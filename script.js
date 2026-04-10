@@ -1,4 +1,10 @@
 // Frontend Script for AI Emotional Diary
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
+// Supabase Configuration
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 document.addEventListener('DOMContentLoaded', () => {
     const analyzeBtn = document.getElementById('analyze-btn');
@@ -9,6 +15,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const historyList = document.getElementById('history-list');
     const themeToggle = document.getElementById('theme-toggle');
     const themeIcon = document.getElementById('theme-icon');
+
+    // Auth Elements
+    const authContainer = document.getElementById('auth-container');
+    const appContainer = document.getElementById('app-container');
+    const emailInput = document.getElementById('auth-email');
+    const passwordInput = document.getElementById('auth-password');
+    const loginBtn = document.getElementById('login-btn');
+    const signupBtn = document.getElementById('signup-btn');
+    const googleLoginBtn = document.getElementById('google-login-btn');
+    const logoutBtn = document.getElementById('logout-btn');
+    const userInfo = document.getElementById('user-info');
+    const userEmailSpan = document.getElementById('user-email');
+
 
 
     // Initialize Data
@@ -173,8 +192,66 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 
-    // Initial Fetch
-    fetchHistory();
+    // --- Auth Logic ---
+    const updateUIForAuth = (session) => {
+        if (session) {
+            authContainer.style.display = 'none';
+            appContainer.style.display = 'block';
+            userInfo.style.display = 'flex';
+            userEmailSpan.textContent = session.user.email;
+            fetchHistory();
+        } else {
+            authContainer.style.display = 'flex';
+            appContainer.style.display = 'none';
+            userInfo.style.display = 'none';
+        }
+    };
+
+    // Listen for Auth State Changes
+    supabase.auth.onAuthStateChange((_event, session) => {
+        updateUIForAuth(session);
+    });
+
+    // Email/Password Signup
+    signupBtn.addEventListener('click', async () => {
+        const email = emailInput.value.trim();
+        const password = passwordInput.value.trim();
+        if (!email || !password) return alert('이메일과 비밀번호를 입력해주세요.');
+
+        const { error } = await supabase.auth.signUp({ email, password });
+        if (error) alert(`회원가입 오류: ${error.message}`);
+        else alert('회원가입 확인 메일이 발송되었습니다 (설정에 따라 즉시 로그인될 수 있습니다).');
+    });
+
+    // Email/Password Login
+    loginBtn.addEventListener('click', async () => {
+        const email = emailInput.value.trim();
+        const password = passwordInput.value.trim();
+        if (!email || !password) return alert('이메일과 비밀번호를 입력해주세요.');
+
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) alert(`로그인 오류: ${error.message}`);
+    });
+
+    // Google Login
+    googleLoginBtn.addEventListener('click', async () => {
+        const { error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: window.location.origin
+            }
+        });
+        if (error) alert(`Google 로그인 오류: ${error.message}`);
+    });
+
+    // Logout
+    logoutBtn.addEventListener('click', async () => {
+        const { error } = await supabase.auth.signOut();
+        if (error) alert(`로그아웃 오류: ${error.message}`);
+    });
+
+
+
 
 
 
