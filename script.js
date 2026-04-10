@@ -28,6 +28,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const userInfo = document.getElementById('user-info');
     const userEmailSpan = document.getElementById('user-email');
 
+    // Modal Elements
+    const customModal = document.getElementById('custom-modal');
+    const modalMessage = document.getElementById('modal-message');
+    const modalCloseBtn = document.getElementById('modal-close-btn');
+
+    const showModal = (msg) => {
+        modalMessage.textContent = msg;
+        customModal.style.display = 'flex';
+    };
+
+    modalCloseBtn.addEventListener('click', () => {
+        customModal.style.display = 'none';
+    });
+
+
 
 
     // Initialize Data
@@ -216,21 +231,21 @@ document.addEventListener('DOMContentLoaded', () => {
     signupBtn.addEventListener('click', async () => {
         const email = emailInput.value.trim();
         const password = passwordInput.value.trim();
-        if (!email || !password) return alert('이메일과 비밀번호를 입력해주세요.');
+        if (!email || !password) return showModal('이메일과 비밀번호를 입력해주세요.');
 
         const { error } = await supabase.auth.signUp({ email, password });
-        if (error) alert(`회원가입 오류: ${error.message}`);
-        else alert('회원가입 확인 메일이 발송되었습니다 (설정에 따라 즉시 로그인될 수 있습니다).');
+        if (error) showModal(`회원가입 오류: ${error.message}`);
+        else showModal('가입 확인 이메일을 확인해주세요!');
     });
 
     // Email/Password Login
     loginBtn.addEventListener('click', async () => {
         const email = emailInput.value.trim();
         const password = passwordInput.value.trim();
-        if (!email || !password) return alert('이메일과 비밀번호를 입력해주세요.');
+        if (!email || !password) return showModal('이메일과 비밀번호를 입력해주세요.');
 
         const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) alert(`로그인 오류: ${error.message}`);
+        if (error) showModal(`로그인 오류: ${error.message}`);
     });
 
     // Google Login
@@ -241,14 +256,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 redirectTo: window.location.origin
             }
         });
-        if (error) alert(`Google 로그인 오류: ${error.message}`);
+        if (error) showModal(`Google 로그인 오류: ${error.message}`);
     });
 
     // Logout
     logoutBtn.addEventListener('click', async () => {
         const { error } = await supabase.auth.signOut();
-        if (error) alert(`로그아웃 오류: ${error.message}`);
+        if (error) showModal(`로그아웃 오류: ${error.message}`);
     });
+
 
 
 
