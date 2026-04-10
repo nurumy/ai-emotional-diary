@@ -233,10 +233,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const password = passwordInput.value.trim();
         if (!email || !password) return showModal('이메일과 비밀번호를 입력해주세요.');
 
-        const { error } = await supabase.auth.signUp({ email, password });
-        if (error) showModal(`회원가입 오류: ${error.message}`);
-        else showModal('가입 확인 이메일을 확인해주세요!');
+        const { data, error } = await supabase.auth.signUp({ email, password });
+        if (error) {
+            showModal(`회원가입 오류: ${error.message}`);
+        } else {
+            // identities가 비어있으면 이미 가입된 계정 (Email Enumeration Protection이 켜져있을 때 나타나는 특징)
+            if (data.user && data.user.identities && data.user.identities.length === 0) {
+                showModal('이미 가입된 이메일 주소입니다. 로그인해 주세요.');
+            } else {
+                showModal('가입 확인 이메일을 확인해주세요!');
+            }
+        }
     });
+
 
     // Email/Password Login
     loginBtn.addEventListener('click', async () => {
