@@ -372,8 +372,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const msgDiv = document.createElement('div');
         msgDiv.className = `chat-msg ${isMe ? 'me' : 'other'}`;
 
+        const senderEmail = data.userEmail || '알 수 없는 사용자';
+
         msgDiv.innerHTML = `
-            ${!isMe ? `<div class="msg-info">${data.userEmail.split('@')[0]}</div>` : ''}
+            <div class="msg-info">${isMe ? '나' : senderEmail.split('@')[0]} (${senderEmail})</div>
             <div class="msg-text">${data.text}</div>
             <div class="msg-time">${data.time}</div>
         `;
