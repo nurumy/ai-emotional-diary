@@ -651,27 +651,49 @@ canvas#emotion-chart {
     }
 }
 
+/* Chat Section Styles */
+.chat-section {
+    margin-top: 3rem;
+    animation: fadeIn 1s ease-out;
+}
+
+.chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+#chat-subtitle {
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: var(--text-main);
+    margin-bottom: 0;
+    /* Header flex에서 관리 */
+}
+
 /* Chat Profile Styles */
 .chat-profile {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    /* 가로 배열 */
     align-items: center;
-    padding-bottom: 1.5rem;
-    border-bottom: 1px solid var(--card-border);
     gap: 0.8rem;
 }
 
 .avatar-wrapper {
     position: relative;
-    width: 80px;
-    height: 80px;
+    width: 44px;
+    /* 헤더에 맞게 크기 축소 */
+    height: 44px;
     border-radius: 50%;
     overflow: hidden;
     cursor: pointer;
-    border: 3px solid var(--primary-color);
-    box-shadow: var(--shadow-md);
+    border: 2px solid var(--primary-color);
+    box-shadow: var(--shadow-sm);
     transition: all 0.3s ease;
 }
+
 
 .avatar-wrapper:hover {
     transform: scale(1.05);

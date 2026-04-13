@@ -116,9 +116,8 @@
             </section>
 
             <section class="chat-section">
-                <h2 id="chat-subtitle">실시간 채팅</h2>
-                <div class="chat-container glass">
-                    <!-- Profile Section -->
+                <div class="chat-header">
+                    <h2 id="chat-subtitle">실시간 채팅</h2>
                     <div class="chat-profile">
                         <div class="avatar-wrapper" id="profile-upload-trigger">
                             <img id="user-avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=default"
@@ -130,7 +129,9 @@
                         <button id="change-photo-btn" class="text-btn">사진 변경</button>
                         <input type="file" id="avatar-input" accept="image/*" style="display: none;">
                     </div>
+                </div>
 
+                <div class="chat-container glass">
                     <div id="chat-messages" class="chat-messages">
                         <p class="welcome-msg">따뜻한 위로와 응원을 나누어 보세요.</p>
                     </div>
@@ -144,6 +145,7 @@
                     </div>
                 </div>
             </section>
+
         </main>
 
 
