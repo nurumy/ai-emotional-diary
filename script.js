@@ -394,23 +394,36 @@ document.addEventListener('DOMContentLoaded', () => {
         const filePath = `${userId}/avatar.png`;
 
         try {
-            // 업로드 (이미 있는 경우 덮어쓰기 위해 upsert true)
-            const { error } = await supabase.storage
+            // 1. Storage 업로드 (이미 있는 경우 덮어쓰기 위해 upsert true)
+            const { error: uploadError } = await supabase.storage
                 .from('avatars')
                 .upload(filePath, file, {
                     upsert: true,
                     cacheControl: '0'
                 });
 
-            if (error) throw error;
+            if (uploadError) throw uploadError;
 
-            // UI 업데이트
+            // 2. 공개 URL 가져오기
+            const { data: { publicUrl } } = supabase.storage
+                .from('avatars')
+                .getPublicUrl(filePath);
+
+            // 3. 사용자 메타데이터 업데이트
+            const { error: updateError } = await supabase.auth.updateUser({
+                data: { avatar_url: publicUrl }
+            });
+
+            if (updateError) throw updateError;
+
+            // 4. UI 업데이트
             loadUserAvatar(session.user);
             showModal('프로필 사진이 성공적으로 변경되었습니다!');
         } catch (error) {
             console.error('Avatar upload error:', error);
             showModal(`사진 업로드 실패: ${error.message}`);
         }
+
     };
 
     profileTrigger.addEventListener('click', () => avatarInput.click());
@@ -428,15 +441,25 @@ document.addEventListener('DOMContentLoaded', () => {
         msgDiv.className = `chat-msg ${isMe ? 'me' : 'other'}`;
 
         const senderEmail = data.userEmail || '알 수 없는 사용자';
+        // 공개된 아바타 경로 사용 (userId 기반)
+        const senderAvatarUrl = `${supabaseUrl}/storage/v1/object/public/avatars/${data.userId}/avatar.png?t=${Date.now()}`;
 
         msgDiv.innerHTML = `
-            <div class="msg-info">${isMe ? '나' : senderEmail.split('@')[0]} (${senderEmail})</div>
+            ${!isMe ? `
+                <div class="msg-header">
+                    <img class="msg-avatar" src="${senderAvatarUrl}" onerror="this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${senderEmail}'">
+                    <span class="msg-info">${senderEmail.split('@')[0]} (${senderEmail})</span>
+                </div>
+            ` : `
+                <div class="msg-info-me">나 (${senderEmail})</div>
+            `}
             <div class="msg-text">${data.text}</div>
             <div class="msg-time">${data.time}</div>
         `;
 
         chatMessages.appendChild(msgDiv);
         chatMessages.scrollTop = chatMessages.scrollHeight;
+
 
         // Welcome 메시지 제거
         const welcome = chatMessages.querySelector('.welcome-msg');

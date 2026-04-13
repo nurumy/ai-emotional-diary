@@ -813,10 +813,31 @@ canvas#emotion-chart {
     border-bottom-left-radius: 4px;
 }
 
+.msg-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.4rem;
+}
+
+.msg-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid var(--card-border);
+}
+
 .msg-info {
     font-size: 0.75rem;
-    margin-bottom: 0.3rem;
     color: var(--text-muted);
+}
+
+.msg-info-me {
+    font-size: 0.75rem;
+    margin-bottom: 0.4rem;
+    color: rgba(255, 255, 255, 0.8);
+    text-align: right;
 }
 
 .msg-time {
@@ -825,6 +846,7 @@ canvas#emotion-chart {
     opacity: 0.7;
     text-align: right;
 }
+
 
 .chat-input-group {
     display: flex;
