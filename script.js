@@ -37,10 +37,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatMessages = document.getElementById('chat-messages');
     const chatInput = document.getElementById('chat-input');
     const chatSendBtn = document.getElementById('chat-send-btn');
+    const chatAttachBtn = document.getElementById('chat-attach-btn');
+    const chatImageInput = document.getElementById('chat-image-input');
     const userAvatar = document.getElementById('user-avatar');
     const avatarInput = document.getElementById('avatar-input');
     const profileTrigger = document.getElementById('profile-upload-trigger');
     const changePhotoBtn = document.getElementById('change-photo-btn');
+
     let chatChannel = null;
 
 
@@ -426,7 +429,46 @@ document.addEventListener('DOMContentLoaded', () => {
 
     };
 
+    chatAttachBtn.addEventListener('click', () => chatImageInput.click());
+    chatImageInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}.${fileExt}`;
+        const filePath = `${session.user.id}/${fileName}`;
+
+        try {
+            // 업로드
+            const { error: uploadError } = await supabase.storage
+                .from('chat-images')
+                .upload(filePath, file);
+
+            if (uploadError) throw uploadError;
+
+            // 공개 URL 가져오기
+            const { data: { publicUrl } } = supabase.storage
+                .from('chat-images')
+                .getPublicUrl(filePath);
+
+            // 메시지로 전송
+            await supabase.from('messages').insert([
+                { content: publicUrl, user_email: session.user.email }
+            ]);
+
+        } catch (error) {
+            console.error('Image upload error:', error);
+            showModal('이미지 전송에 실패했습니다.');
+        } finally {
+            chatImageInput.value = '';
+        }
+    });
+
     profileTrigger.addEventListener('click', () => avatarInput.click());
+
     changePhotoBtn.addEventListener('click', () => avatarInput.click());
     avatarInput.addEventListener('change', handleAvatarUpload);
 
@@ -444,6 +486,12 @@ document.addEventListener('DOMContentLoaded', () => {
         // 공개된 아바타 경로 사용 (userId 기반)
         const senderAvatarUrl = `${supabaseUrl}/storage/v1/object/public/avatars/${data.userId}/avatar.png?t=${Date.now()}`;
 
+        // 메시지 내용이 URL인 경우 이미지로 렌더링
+        const isImage = data.text.match(/\.(jpeg|jpg|gif|png|webp)/i) || data.text.includes('supabase.co/storage/v1/object/public/chat-images/');
+        const contentHTML = isImage
+            ? `<img src="${data.text}" class="chat-img" onclick="window.open(this.src)">`
+            : `<div class="msg-text">${data.text}</div>`;
+
         msgDiv.innerHTML = `
             <div class="msg-header ${isMe ? 'reverse' : ''}">
                 <img class="msg-avatar" src="${senderAvatarUrl}" onerror="this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${senderEmail}'">
@@ -451,9 +499,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     ${isMe ? `나 (${senderEmail})` : `${senderEmail.split('@')[0]} (${senderEmail})`}
                 </span>
             </div>
-            <div class="msg-text">${data.text}</div>
+            ${contentHTML}
             <div class="msg-time">${data.time}</div>
         `;
+
 
 
         chatMessages.appendChild(msgDiv);

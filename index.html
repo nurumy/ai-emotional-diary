@@ -137,12 +137,16 @@
                     </div>
 
                     <div class="chat-input-group">
+                        <input type="file" id="chat-image-input" accept="image/*" style="display: none;">
+                        <button id="chat-attach-btn" class="icon-btn">
+                            <i data-lucide="paperclip"></i>
+                        </button>
                         <input type="text" id="chat-input" placeholder="메시지를 입력하세요..." autocomplete="off">
-                        <button id="chat-send-btn" class="btn btn-primary">
+                        <button id="chat-send-btn" class="btn btn-primary icon-only">
                             <i data-lucide="send"></i>
-                            전송
                         </button>
                     </div>
+
                 </div>
             </section>
 
