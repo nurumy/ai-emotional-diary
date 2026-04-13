@@ -445,17 +445,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const senderAvatarUrl = `${supabaseUrl}/storage/v1/object/public/avatars/${data.userId}/avatar.png?t=${Date.now()}`;
 
         msgDiv.innerHTML = `
-            ${!isMe ? `
-                <div class="msg-header">
-                    <img class="msg-avatar" src="${senderAvatarUrl}" onerror="this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${senderEmail}'">
-                    <span class="msg-info">${senderEmail.split('@')[0]} (${senderEmail})</span>
-                </div>
-            ` : `
-                <div class="msg-info-me">나 (${senderEmail})</div>
-            `}
+            <div class="msg-header ${isMe ? 'reverse' : ''}">
+                <img class="msg-avatar" src="${senderAvatarUrl}" onerror="this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${senderEmail}'">
+                <span class="${isMe ? 'msg-info-me' : 'msg-info'}">
+                    ${isMe ? `나 (${senderEmail})` : `${senderEmail.split('@')[0]} (${senderEmail})`}
+                </span>
+            </div>
             <div class="msg-text">${data.text}</div>
             <div class="msg-time">${data.time}</div>
         `;
+
 
         chatMessages.appendChild(msgDiv);
         chatMessages.scrollTop = chatMessages.scrollHeight;

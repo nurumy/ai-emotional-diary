@@ -820,12 +820,17 @@ canvas#emotion-chart {
     margin-bottom: 0.4rem;
 }
 
+.msg-header.reverse {
+    flex-direction: row-reverse;
+}
+
 .msg-avatar {
     width: 24px;
     height: 24px;
     border-radius: 50%;
     object-fit: cover;
     border: 1px solid var(--card-border);
+    flex-shrink: 0;
 }
 
 .msg-info {
@@ -835,7 +840,6 @@ canvas#emotion-chart {
 
 .msg-info-me {
     font-size: 0.75rem;
-    margin-bottom: 0.4rem;
     color: rgba(255, 255, 255, 0.8);
     text-align: right;
 }
@@ -846,6 +850,7 @@ canvas#emotion-chart {
     opacity: 0.7;
     text-align: right;
 }
+
 
 
 .chat-input-group {
