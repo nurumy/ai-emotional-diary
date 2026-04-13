@@ -33,11 +33,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalMessage = document.getElementById('modal-message');
     const modalCloseBtn = document.getElementById('modal-close-btn');
 
-    // Chat Elements
+    // Chat & Profile Elements
     const chatMessages = document.getElementById('chat-messages');
     const chatInput = document.getElementById('chat-input');
     const chatSendBtn = document.getElementById('chat-send-btn');
+    const userAvatar = document.getElementById('user-avatar');
+    const avatarInput = document.getElementById('avatar-input');
+    const profileTrigger = document.getElementById('profile-upload-trigger');
+    const changePhotoBtn = document.getElementById('change-photo-btn');
     let chatChannel = null;
+
 
     const showModal = (msg) => {
         modalMessage.textContent = msg;
@@ -230,7 +235,9 @@ document.addEventListener('DOMContentLoaded', () => {
             userEmailSpan.textContent = session.user.email;
             fetchHistory();
             initRealtimeChat(session.user);
+            loadUserAvatar(session.user);
         } else {
+
             authContainer.style.display = 'flex';
             appContainer.style.display = 'none';
             userInfo.style.display = 'none';
@@ -364,7 +371,55 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
 
+    // --- Profile & Avatar Logic ---
+    const loadUserAvatar = (user) => {
+        // Supabase Storage에서 사용자 아바타 URL 가져오기
+        const avatarUrl = `${supabaseUrl}/storage/v1/object/public/avatars/${user.id}/avatar.png?t=${Date.now()}`;
+
+        // 이미지 직접 로드 시도 (에러 발생 시 기본 이미지로 유지)
+        const img = new Image();
+        img.onload = () => userAvatar.src = avatarUrl;
+        img.onerror = () => userAvatar.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`;
+        img.src = avatarUrl;
+    };
+
+    const handleAvatarUpload = async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+
+        const userId = session.user.id;
+        const filePath = `${userId}/avatar.png`;
+
+        try {
+            // 업로드 (이미 있는 경우 덮어쓰기 위해 upsert true)
+            const { error } = await supabase.storage
+                .from('avatars')
+                .upload(filePath, file, {
+                    upsert: true,
+                    cacheControl: '0'
+                });
+
+            if (error) throw error;
+
+            // UI 업데이트
+            loadUserAvatar(session.user);
+            showModal('프로필 사진이 성공적으로 변경되었습니다!');
+        } catch (error) {
+            console.error('Avatar upload error:', error);
+            showModal(`사진 업로드 실패: ${error.message}`);
+        }
+    };
+
+    profileTrigger.addEventListener('click', () => avatarInput.click());
+    changePhotoBtn.addEventListener('click', () => avatarInput.click());
+    avatarInput.addEventListener('change', handleAvatarUpload);
+
+
     const appendChatMessage = async (data) => {
+
         const { data: { session } } = await supabase.auth.getSession();
         const currentUser = session?.user;
         const isMe = currentUser && currentUser.id === data.userId;
